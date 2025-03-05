@@ -25,16 +25,15 @@ export class AuthService {
 			throw new UnauthorizedException('Invalid email or password')
 		}
 
-		const token = this.jwtService.sign({ id: user.id, email: user.email })
+		const authToken = this.jwtService.sign({ id: user.id, email: user.email })
 
 		await this.prisma.user.update({
 			where: { id: user.id },
-			data: { authToken: token },
+			data: { authToken },
 		})
 
 		return {
-			message: 'Sign-in successful!',
-			token,
+			authToken
 		}
 	}
 
