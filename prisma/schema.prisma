@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  name        String?
+  username    String?   @unique
+  email       String    @unique
+  password    String?
+  verifyToken String?
+  authToken   String?
+  avatar      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  comments    Comment[]
+  posts       Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id         String   @id @default(uuid())
+  title      String
+  content    String
+  published  Boolean  @default(false)
+  authorId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  viewCount  Int      @default(0)
+  categoryId String?
+
+  author   User      @relation(fields: [authorId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "fk_category")
+
+  comments Comment[]
+  postTags PostTag[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@map("comments")
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  postTags PostTag[]
+
+  @@map("tags")
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade, map: "fk_post")
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade, map: "fk_tag")
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
