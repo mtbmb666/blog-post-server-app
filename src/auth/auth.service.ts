@@ -2,14 +2,13 @@ import { Injectable, UnauthorizedException, BadRequestException, ConflictExcepti
 import { PrismaService } from 'src/prisma/prisma.service'
 import * as bcrypt from 'bcrypt'
 import { JwtService } from '@nestjs/jwt'
-// import { generateVerifyToken } from 'src/utils/generate-verify-token'
-// import { sendVerificationEmail } from 'src/utils/send-verification-email'
+import nodemailer from 'nodemailer'
 
 @Injectable()
 export class AuthService {
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly jwtService: JwtService
+		private readonly jwtService: JwtService,
 	) { }
 
 	async signIn(email: string, password: string) {
@@ -55,7 +54,7 @@ export class AuthService {
 			},
 		})
 
-		await sendVerificationEmail(user.email, verifyToken)
+		await this.sendVerificationEmail(user.email, verifyToken)
 		return {
 			message: 'User created successfully. Please check your email to verify your account.',
 		}
@@ -71,5 +70,24 @@ export class AuthService {
 			result += characters[randomIndex]
 		}
 		return result
+	}
+
+	private async sendVerificationEmail(email: string, verifyToken: string) {
+		const transporter = nodemailer.createTransport({
+			service: 'gmail',
+			auth: {
+				user: process.env.EMAIL_USER,
+				pass: process.env.EMAIL_PASSWORD,
+			},
+		})
+	
+		const mailOptions = {
+			from: process.env.EMAIL_USER,
+			to: email,
+			subject: 'Welcome to our NextJs Blog Post App',
+			text: `Please click on the following link to verify your email: ${process.env.APP_URL}/auth/verify/${verifyToken}`,
+		}
+	
+		await transporter.sendMail(mailOptions)
 	}
 }
