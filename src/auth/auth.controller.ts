@@ -36,4 +36,29 @@ export class AuthController {
 
     return this.authService.signUp(email)
   }
+
+  @Post('verify')
+  async verifyAccount(
+    @Body('verifyToken') verifyToken: string,
+    @Body('name') name: string,
+    @Body('password') password: string,
+
+    @Res() res: Response
+  ) {
+    if (!verifyToken) throw new BadRequestException('Email is required')
+    if (!name) throw new BadRequestException('Email is required')
+    if (!password) throw new BadRequestException('Email is required')
+
+    const { authToken } = await this.authService.verifyAccount(verifyToken, name, password)
+
+    res.cookie('authToken', authToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 2 * 24 * 60 * 60 * 1000,
+      path: '/',
+      sameSite: 'lax',
+    })
+
+    return res.json({ message: 'Sign-in successful!' })
+  }
 }

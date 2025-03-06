@@ -59,6 +59,30 @@ export class AuthService {
 		}
 	}
 
+	async verifyAccount(
+		verifyToken: string,
+		name: string,
+		password: string
+	) {
+		const existingUser = await this.prisma.user.findFirstOrThrow({
+			where: { verifyToken }
+		})
+		const authToken = this.jwtService.sign({ id: existingUser.id, email: existingUser.email })
+		await this.prisma.user.update({
+			where: {
+				id: existingUser.id
+			},
+			data: {
+				name,
+				password,
+				authToken,
+				verifyToken: null
+			}
+		})
+
+		return { authToken }
+	}
+
 
 	private generateVerifyToken() {
 		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -79,14 +103,14 @@ export class AuthService {
 				pass: process.env.EMAIL_PASSWORD,
 			},
 		})
-	
+
 		const mailOptions = {
 			from: process.env.EMAIL_USER,
 			to: email,
 			subject: 'Welcome to our NextJs Blog Post App',
-			text: `Please click on the following link to verify your email: ${process.env.APP_URL}/auth/verify/${verifyToken}`,
+			text: `Please click on the following link to verify your email: ${process.env.APP_URL}/auth/activate?verifytoken=${verifyToken}`,
 		}
-	
+
 		await transporter.sendMail(mailOptions)
 	}
 }
