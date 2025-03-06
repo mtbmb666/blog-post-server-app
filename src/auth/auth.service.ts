@@ -17,12 +17,12 @@ export class AuthService {
 		})
 
 		if (!user || !user.password) {
-			throw new UnauthorizedException('Invalid email or password')
+			throw new UnauthorizedException('Invalid email or password2')
 		}
 
 		const passwordMatch = await bcrypt.compare(password, user.password)
 		if (!passwordMatch) {
-			throw new UnauthorizedException('Invalid email or password')
+			throw new UnauthorizedException('Invalid email or password3')
 		}
 
 		const authToken = this.jwtService.sign({ id: user.id, email: user.email })
@@ -68,13 +68,15 @@ export class AuthService {
 			where: { verifyToken }
 		})
 		const authToken = this.jwtService.sign({ id: existingUser.id, email: existingUser.email })
+		const passwordHash = await bcrypt.hash(password, 10)
+
 		await this.prisma.user.update({
 			where: {
 				id: existingUser.id
 			},
 			data: {
 				name,
-				password,
+				password: passwordHash,
 				authToken,
 				verifyToken: null
 			}

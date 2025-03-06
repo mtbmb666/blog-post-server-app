@@ -1,6 +1,6 @@
+import { Response } from 'express'
 import { BadRequestException, Body, Controller, Post, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { Response } from 'express'
 
 @Controller('auth')
 export class AuthController {
@@ -22,7 +22,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 2 * 24 * 60 * 60 * 1000,
       path: '/',
-      sameSite: 'strict'
+      sameSite: 'lax'
     })
 
     return res.json({ message: 'Sign-in successful!' })
