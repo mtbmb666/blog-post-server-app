@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, Query, Req, UnauthorizedException } from '@nestjs/common'
+import { Body, Controller, Get, Post, Put, Query, Req, UnauthorizedException } from '@nestjs/common'
 import { Request } from 'express'
 import { SettingsService } from './settings.service'
 
@@ -51,5 +51,22 @@ export class SettingsController {
     const requesterId = this.settingsService.extractUserIdFromToken(authToken)
 
     return await this.settingsService.setSettings(requesterId, body)
+  }
+
+  @Post('set-password')
+  async setPassword(
+    @Req() request: Request,
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string
+  ) {
+    const authToken = request.cookies?.authToken
+
+    if (!authToken) {
+      throw new UnauthorizedException('User not authorized')
+    }
+
+    const requesterId = this.settingsService.extractUserIdFromToken(authToken)
+
+    return await this.settingsService.setPassword(requesterId, oldPassword, newPassword)
   }
 }

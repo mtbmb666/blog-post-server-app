@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import * as bcrypt from 'bcrypt'
 import { PrismaService } from 'src/prisma/prisma.service'
 
 @Injectable()
@@ -63,5 +64,33 @@ export class SettingsService {
 				authToken: true
 			}
 		})
+	}
+
+	async setPassword(requesterId: string, oldPassword: string, newPassword: string) {
+		const user = await this.prisma.user.findUnique({
+			where: { id: requesterId },
+		})
+
+		if (!user) {
+			throw new NotFoundException('User not found')
+		}
+
+		if (!user.password) {
+			throw new BadRequestException('User not verified.')
+		}
+
+		const isMatch = await bcrypt.compare(oldPassword, user.password)
+		if (!isMatch) {
+			throw new BadRequestException('Old password is incorrect')
+		}
+
+		const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+		await this.prisma.user.update({
+			where: { id: requesterId },
+			data: { password: hashedPassword },
+		})
+
+		return { message: 'Password updated successfully' }
 	}
 }
