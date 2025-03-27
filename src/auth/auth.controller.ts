@@ -7,19 +7,6 @@ import { AuthService } from './auth.service'
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
-  @Get()
-  async getUserData(
-    @Req() request: Request
-  ) {
-    const authToken = request.cookies?.authToken
-    console.log(request.cookies)
-
-    if (!authToken) {
-      throw new UnauthorizedException('No auth token provided')
-    }
-
-    return await this.authService.getUserData(authToken)
-  }
 
   @Get('users')
   async getUsersData() {
@@ -29,6 +16,23 @@ export class AuthController {
   @Get('delete')
   async deleteUsers() {
     return await this.authService.deleteUsers()
+  }
+  
+
+  
+
+
+  @Get()
+  async getUserData(
+    @Req() request: Request
+  ) {
+    const authToken = request.cookies?.authToken
+
+    if (!authToken) {
+      throw new UnauthorizedException('No auth token provided')
+    }
+
+    return await this.authService.getUserData(authToken)
   }
 
   @Post('sign-in')
