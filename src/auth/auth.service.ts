@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 import * as bcrypt from 'bcrypt'
 import { JwtService } from '@nestjs/jwt'
@@ -10,6 +10,35 @@ export class AuthService {
 		private readonly prisma: PrismaService,
 		private readonly jwtService: JwtService,
 	) { }
+
+	// test begin
+	async getUsersData() {
+		return await this.prisma.user.findMany()
+	}
+
+	async deleteUsers() {
+		return await this.prisma.user.deleteMany()
+	}
+	// test end
+
+	async getUserData(
+		authToken: string
+	) {
+		const { email } = this.extractUserFromToken(authToken)
+
+		const user = await this.prisma.user.findUnique({
+			where: { email },
+			omit: {
+				password: true
+			}
+		})
+
+		if (!user) {
+			throw new NotFoundException('User not found')
+		}
+
+		return user
+	}
 
 	async signIn(email: string, password: string) {
 		const user = await this.prisma.user.findUnique({
@@ -114,5 +143,19 @@ export class AuthService {
 		}
 
 		await transporter.sendMail(mailOptions)
+	}
+
+	private extractUserFromToken(authToken: string): UserPayload {
+		try {
+			const payload = this.jwtService.verify<UserPayload>(authToken)
+
+			if (!payload?.id || !payload?.email) {
+				throw new UnauthorizedException('Invalid token payload')
+			}
+
+			return { id: payload.id, email: payload.email }
+		} catch (err) {
+			throw new UnauthorizedException('Invalid or expired token')
+		}
 	}
 }

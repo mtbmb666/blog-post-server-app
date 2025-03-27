@@ -1,10 +1,35 @@
-import { Response } from 'express'
-import { BadRequestException, Body, Controller, Post, Res } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Post, Req, Res, UnauthorizedException } from '@nestjs/common'
+import { Response, Request } from 'express'
+
 import { AuthService } from './auth.service'
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
+
+  @Get()
+  async getUserData(
+    @Req() request: Request
+  ) {
+    const authToken = request.cookies?.authToken
+    console.log(request.cookies)
+
+    if (!authToken) {
+      throw new UnauthorizedException('No auth token provided')
+    }
+
+    return await this.authService.getUserData(authToken)
+  }
+
+  @Get('users')
+  async getUsersData() {
+    return await this.authService.getUsersData()
+  }
+
+  @Get('delete')
+  async deleteUsers() {
+    return await this.authService.deleteUsers()
+  }
 
   @Post('sign-in')
   async signIn(
