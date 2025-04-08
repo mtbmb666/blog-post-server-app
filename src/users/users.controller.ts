@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req } from '@nestjs/common'
+import { Controller, Get, Param, Query, Req, UnauthorizedException } from '@nestjs/common'
 import { Request } from 'express'
 import { UsersService } from './users.service'
 
@@ -17,17 +17,38 @@ export class UsersController {
     if (authToken) {
       try {
         requesterId = this.usersService.extractUserIdFromToken(authToken)
-      } catch {
+      } catch (err) {
+        console.error('Error extracting user ID from token:', err)
         requesterId = null
       }
     }
 
-    const user = await this.usersService.getUserData(userId)
+    try {
+      const user = await this.usersService.getUserData(userId)
+      
+      return {
+        ...user,
+        isThisMe: userId === requesterId,
+        authorized: !!authToken
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+      throw new UnauthorizedException('User not found or invalid data')
+    }
+  }
 
-    return {
-      ...user,
-      isThisMe: userId === requesterId,
-      authorized: !!authToken
+  @Get('search')
+  async search(@Query('query') query: string) {
+    if (!query || query.trim() === '') {
+      return { error: 'Query parameter is required' }
+    }
+
+    try {
+      const users = await this.usersService.searchUsers(query)
+      return users
+    } catch (error) {
+      console.error('Error searching users:', error)
+      return { error: 'Failed to search users' }
     }
   }
 }
