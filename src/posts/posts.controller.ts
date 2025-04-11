@@ -1,3 +1,4 @@
+import { Request } from 'express'
 import {
 	Body,
 	Controller,
@@ -7,10 +8,10 @@ import {
 	Req,
 	UnauthorizedException
 } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+
 import { PostsService } from './posts.service'
 import { CreatePostDto } from './posts.dto'
-import { JwtService } from '@nestjs/jwt'
-import { Request } from 'express'
 
 @Controller('posts')
 export class PostsController {
@@ -18,6 +19,11 @@ export class PostsController {
 		private readonly postsService: PostsService,
 		private readonly jwtService: JwtService,
 	) {}
+
+	@Get()
+	getAllPosts() {
+		return this.postsService.getAllPosts()
+	}
 
 	private extractUserFromToken(authToken: string) {
 		try {
@@ -33,14 +39,9 @@ export class PostsController {
 		}
 	}
 
-	@Get()
-	getAllPosts() {
-		return this.postsService.getAllPosts()
-	}
-
 	@Post()
 	createPost(@Body() dto: CreatePostDto, @Req() req: Request) {
-		const authToken = req.cookies?.authtoken
+		const authToken = req.cookies?.authToken
 		if (!authToken) throw new UnauthorizedException('Missing auth token')
 
 		const user = this.extractUserFromToken(authToken)

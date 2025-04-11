@@ -34,18 +34,27 @@ export class PostsService {
 	}
 
 	async createPost(dto: CreatePostDto, userId: string) {
-		const newPost = await this.prisma.post.create({
-			data: {
-				title: dto.title,
-				content: dto.content,
-				published: dto.published,
-				category: { connect: { id: dto.category } },
-				author: { connect: { id: userId } },
-			},
+		const categoryExists = await this.prisma.category.findUnique({
+		  where: { id: dto.category },
 		})
-
+	  
+		if (!categoryExists) {
+		  throw new NotFoundException('Category not found')
+		}
+	  
+		const newPost = await this.prisma.post.create({
+		  data: {
+			title: dto.title,
+			content: dto.content,
+			published: dto.published,
+			category: { connect: { id: dto.category } },
+			author: { connect: { id: userId } },
+		  },
+		})
+	  
 		return { postId: newPost.id }
-	}
+	  }
+	  
 
 	async deletePost(postId: string, userId: string) {
 		const post = await this.prisma.post.findUnique({
