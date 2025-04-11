@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { CreatePostDto } from './posts.dto'
+import { JwtService } from '@nestjs/jwt'
 
 @Injectable()
 export class PostsService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly jwtService: JwtService
+	) { }
 
 	async getAllPosts() {
 		const posts = await this.prisma.post.findMany({
@@ -55,4 +59,49 @@ export class PostsService {
 		await this.prisma.post.delete({ where: { id: postId } })
 		return { message: 'Post deleted successfully' }
 	}
+
+	private extractUserFromToken(authToken: string) {
+		try {
+			const payload = this.jwtService.verify(authToken)
+
+			if (!payload?.id || !payload?.email) {
+				throw new UnauthorizedException('Invalid token payload')
+			}
+
+			return { id: payload.id, email: payload.email }
+		} catch (err) {
+			throw new UnauthorizedException('Invalid or expired token')
+		}
+	}
+
+	async getPostById(id: string) {
+		return this.prisma.post.findUnique({
+			where: { id },
+			include: {
+				author: {
+					select: {
+						id: true,
+						name: true,
+						username: true,
+					},
+				},
+				category: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+				postTags: {
+					select: {
+						tag: {
+							select: {
+								name: true,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+	
 }

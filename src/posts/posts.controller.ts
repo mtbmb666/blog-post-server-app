@@ -5,33 +5,54 @@ import {
 	Get,
 	Post,
 	Req,
-	UseGuards,
+	UnauthorizedException
 } from '@nestjs/common'
 import { PostsService } from './posts.service'
 import { CreatePostDto } from './posts.dto'
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
+import { JwtService } from '@nestjs/jwt'
 import { Request } from 'express'
 
 @Controller('posts')
 export class PostsController {
-	constructor(private readonly postsService: PostsService) {}
+	constructor(
+		private readonly postsService: PostsService,
+		private readonly jwtService: JwtService,
+	) {}
+
+	private extractUserFromToken(authToken: string) {
+		try {
+			const payload = this.jwtService.verify(authToken)
+
+			if (!payload?.id || !payload?.email) {
+				throw new UnauthorizedException('Invalid token payload')
+			}
+
+			return { id: payload.id, email: payload.email }
+		} catch (err) {
+			throw new UnauthorizedException('Invalid or expired token')
+		}
+	}
 
 	@Get()
 	getAllPosts() {
 		return this.postsService.getAllPosts()
 	}
 
-	@UseGuards(JwtAuthGuard)
 	@Post()
 	createPost(@Body() dto: CreatePostDto, @Req() req: Request) {
-		const userId = req.user['id']
-		return this.postsService.createPost(dto, userId)
+		const authToken = req.cookies?.authtoken
+		if (!authToken) throw new UnauthorizedException('Missing auth token')
+
+		const user = this.extractUserFromToken(authToken)
+		return this.postsService.createPost(dto, user.id)
 	}
 
-	@UseGuards(JwtAuthGuard)
 	@Delete()
 	deletePost(@Body('id') id: string, @Req() req: Request) {
-		const userId = req.user['id']
-		return this.postsService.deletePost(id, userId)
+		const authToken = req.cookies?.authToken
+		if (!authToken) throw new UnauthorizedException('Missing auth token')
+
+		const user = this.extractUserFromToken(authToken)
+		return this.postsService.deletePost(id, user.id)
 	}
 }

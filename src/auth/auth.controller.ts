@@ -17,10 +17,6 @@ export class AuthController {
   async deleteUsers() {
     return await this.authService.deleteUsers()
   }
-  
-
-  
-
 
   @Get()
   async getUserData(
